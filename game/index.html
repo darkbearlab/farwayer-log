@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farwayer's Log: The Lost Stars</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>
+        body { margin: 0; background-color: #050505; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        canvas { box-shadow: 0 0 20px rgba(255, 215, 0, 0.1); }
+    </style>
+</head>
+<body>
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        backgroundColor: '#050505',
+        physics: {
+            default: 'arcade',
+            arcade: { gravity: { y: 0 } }
+        },
+        scene: { preload: preload, create: create, update: update }
+    };
+
+    let player;
+    let cursors;
+    let light;
+    let stars;
+    let game = new Phaser.Game(config);
+
+    function preload() {
+        // We'll create shapes programmatically for this minimal prototype
+    }
+
+    function create() {
+        // Create a simple star texture
+        let starGraphic = this.make.graphics({x: 0, y: 0, add: false});
+        starGraphic.fillStyle(0xffffff, 1);
+        starGraphic.fillCircle(2, 2, 2);
+        starGraphic.generateTexture('star', 4, 4);
+
+        // Create player (a glowing spirit)
+        player = this.add.circle(400, 300, 8, 0xffd700);
+        this.physics.add.existing(player);
+        player.body.setCollideWorldBounds(true);
+
+        // Visual "Aura"
+        light = this.add.circle(400, 300, 100, 0xffd700, 0.05);
+        
+        // Random Background Stars (dim)
+        for (let i = 0; i < 100; i++) {
+            let x = Phaser.Math.Between(0, 800);
+            let y = Phaser.Math.Between(0, 600);
+            this.add.image(x, y, 'star').setAlpha(0.2);
+        }
+
+        // Star Fragments to collect
+        stars = this.physics.add.group();
+        for (let i = 0; i < 5; i++) {
+            let s = stars.create(Phaser.Math.Between(50, 750), Phaser.Math.Between(50, 550), 'star');
+            s.setTint(0xffd700);
+            s.setScale(2);
+            // Add a slight pulse
+            this.tweens.add({ targets: s, alpha: 0.3, duration: 1000 + (i*200), yoyo: true, repeat: -1 });
+        }
+
+        this.physics.add.overlap(player, stars, collectStar, null, this);
+
+        cursors = this.input.keyboard.createCursorKeys();
+
+        // Narrative Text
+        this.add.text(20, 20, "Log: 001 - The fog is thick today. I search for remnants of the sky.", { 
+            fontSize: '14px', 
+            color: '#ffd700',
+            fontFamily: 'Georgia, serif',
+            fontStyle: 'italic'
+        }).setAlpha(0.8);
+    }
+
+    function update() {
+        player.body.setVelocity(0);
+        let speed = 160;
+
+        if (cursors.left.isDown) player.body.setVelocityX(-speed);
+        else if (cursors.right.isDown) player.body.setVelocityX(speed);
+        if (cursors.up.isDown) player.body.setVelocityY(-speed);
+        else if (cursors.down.isDown) player.body.setVelocityY(speed);
+
+        // Update Aura position
+        light.setPosition(player.x, player.y);
+    }
+
+    function collectStar(player, star) {
+        star.destroy();
+        // Emit logic: The more stars you collect, the wider the light?
+        light.setRadius(light.radius + 10);
+        console.log("A fragment recovered.");
+    }
+</script>
+</body>
+</html>
